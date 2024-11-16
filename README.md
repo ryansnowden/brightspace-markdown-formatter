@@ -3,4 +3,6 @@ Grabs the content from Brightspace downloads and converts the html to markdown s
 
 It cleans up the html, gets rid of js, converts it to markdown, removes some lines, puts it into numbered directories and combines it into one file.
 
+Why? I can't stand the staged reading of small text and embedded video in small sections when you can speed read and use AI drivern summaries on 6 weeks of coursework.
+
 TODO: Where Text alternate exists, grab the html, convert to md, insert into file.
