@@ -262,6 +262,9 @@ def combine_markdown_files():
         output_filename = f'week_{folder}.md'
         output_file = os.path.join(folder_path, output_filename)
         
+        # Find introduction file for this week
+        intro_file = os.path.join(base_dir, f'Introduction to Week {folder}.md')
+        
         # Find all markdown files in the folder
         markdown_files = []
         for root, _, files in os.walk(folder_path):
@@ -282,6 +285,14 @@ def combine_markdown_files():
         # Create the combined file for this folder
         with open(output_file, 'w', encoding='utf-8') as outfile:
             outfile.write(f'# Week {folder}\n\n')
+            
+            # Add introduction content if it exists
+            if os.path.exists(intro_file):
+                with open(intro_file, 'r', encoding='utf-8') as infile:
+                    intro_content = infile.read()
+                    cleaned_intro = clean_markdown(intro_content)
+                    outfile.write(cleaned_intro)
+                    outfile.write('\n\n---\n\n')
             
             # Process each markdown file
             for md_file in markdown_files:
