@@ -9,6 +9,19 @@ def clean_html(html_content):
     # Create BeautifulSoup object
     soup = BeautifulSoup(html_content, 'html.parser')
     
+    # Handle YouTube embeds - convert to plain links
+    for iframe in soup.find_all('iframe'):
+        src = iframe.get('src', '')
+        if 'youtube' in src.lower():
+            # Extract video ID and create plain link
+            video_id = re.search(r'(?:embed/|v=|v/|watch\?v=)([a-zA-Z0-9_-]+)', src)
+            if video_id:
+                video_id = video_id.group(1)
+                link = f'https://www.youtube.com/watch?v={video_id}'
+                # Create text node directly instead of using angle brackets
+                new_tag = soup.new_string(link)
+                iframe.replace_with(new_tag)
+    
     # Remove the head section
     if soup.head:
         soup.head.decompose()
@@ -276,14 +289,55 @@ def combine_markdown_files():
                     content = infile.read()
                     # Clean the content
                     cleaned_content = clean_markdown(content)
-                    # Add file name as subheader
-                    file_name = os.path.basename(md_file)
+                    # Add file name as subheader (without extension)
+                    file_name = os.path.splitext(os.path.basename(md_file))[0]
                     outfile.write(f'## {file_name}\n\n')
                     outfile.write(cleaned_content)
                     outfile.write('\n\n---\n\n')  # Add separator between files
         
         print(f"Created {output_filename} in folder {folder}")
 
+def combine_markdown_files_custom():
+    """
+    Combines markdown files from numbered directories and base directory into a single 'combined.md'
+    with custom processing to ensure clean and consistent output.
+    """
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    output_file = os.path.join(base_dir, 'combined.md')
+    
+    # Collect markdown files
+    markdown_files = []
+    
+    # Find markdown files in numbered directories
+    for item in os.listdir(base_dir):
+        folder_path = os.path.join(base_dir, item)
+        if os.path.isdir(folder_path) and item.isdigit():
+            folder_markdown_files = [f for f in os.listdir(folder_path) if f.endswith('.md')]
+            markdown_files.extend([os.path.join(folder_path, f) for f in folder_markdown_files])
+    
+    # Find markdown files in base directory
+    base_dir_markdown_files = [f for f in os.listdir(base_dir) if f.endswith('.md') and 'Summary' in f]
+    markdown_files.extend([os.path.join(base_dir, f) for f in base_dir_markdown_files])
+    
+    # Sort files to ensure consistent order
+    markdown_files.sort(key=lambda x: int(re.findall(r'\d+', os.path.basename(x))[0]) if re.findall(r'\d+', os.path.basename(x)) else float('inf'))
+    
+    # Combine files
+    with open(output_file, 'w', encoding='utf-8') as outfile:
+        for file_path in markdown_files:
+            with open(file_path, 'r', encoding='utf-8') as infile:
+                # Read entire file content
+                content = infile.read()
+                
+                # Remove any leading/trailing whitespace
+                content = content.strip()
+                
+                # Write content to combined file
+                outfile.write(content + '\n\n---\n\n')
+    
+    print(f"Combined {len(markdown_files)} markdown files into {output_file}")
+
 if __name__ == "__main__":
     process_all_html_files()
     combine_markdown_files()
+    combine_markdown_files_custom()
