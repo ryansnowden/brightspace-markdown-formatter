@@ -317,7 +317,6 @@ def combine_markdown_files():
                     file_name = os.path.splitext(os.path.basename(md_file))[0]
                     outfile.write(f'## {file_name}\n\n')
                     outfile.write(cleaned_content)
-                    outfile.write('\n\n---\n\n')  # Add separator between files
         
         print(f"Created {output_filename} in folder {folder}")
 
@@ -347,58 +346,11 @@ def combine_markdown_files_custom():
     # Sort files by the folder number
     markdown_files.sort(key=lambda x: int(re.findall(r'\d+', os.path.basename(x))[0]) if re.findall(r'\d+', os.path.basename(x)) else float('inf'))
     
-    # Generate table of contents
-    toc = ["# Table of Contents\n\n"]
-    
-    # First pass to collect headers
-    for file_path in markdown_files:
-        with open(file_path, 'r', encoding='utf-8') as infile:
-            content = infile.read()
-            lines = content.split('\n')
-            current_h1 = None
-            
-            for line in lines:
-                line = line.strip()
-                if line.startswith('# '):  # Level 1 header
-                    title = line.replace('# ', '').strip()
-                    anchor = title.lower().replace(' ', '-')
-                    toc.append(f"- [{title}](#{anchor})\n")
-                    current_h1 = title
-                elif line.startswith('## '):  # Level 2 header
-                    if current_h1:  # Only include if we have a parent h1
-                        title = line.replace('## ', '').strip()
-                        # Create anchor that includes parent header to ensure uniqueness
-                        anchor = f"{current_h1.lower().replace(' ', '-')}-{title.lower().replace(' ', '-')}"
-                        toc.append(f"  - [{title}](#{anchor})\n")
-    
     # Combine files
     with open(output_file, 'w', encoding='utf-8') as outfile:
-        # Write table of contents
-        outfile.writelines(toc)
-        outfile.write("\n---\n\n")
-        
-        # Write content
         for file_path in markdown_files:
             with open(file_path, 'r', encoding='utf-8') as infile:
                 content = infile.read()
-                # Update the level 2 header IDs to match TOC anchors
-                lines = content.split('\n')
-                current_h1 = None
-                modified_lines = []
-                
-                for line in lines:
-                    if line.strip().startswith('# '):
-                        current_h1 = line.replace('# ', '').strip()
-                        modified_lines.append(line)
-                    elif line.strip().startswith('## '):
-                        title = line.replace('## ', '').strip()
-                        if current_h1:
-                            anchor = f"{current_h1.lower().replace(' ', '-')}-{title.lower().replace(' ', '-')}"
-                            modified_lines.append(f'## {title} {{#{anchor}}}')
-                    else:
-                        modified_lines.append(line)
-                
-                content = '\n'.join(modified_lines)
                 content = content.strip()
                 outfile.write(content + '\n\n---\n\n')
     
