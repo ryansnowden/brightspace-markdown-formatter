@@ -305,7 +305,6 @@ def combine_markdown_files():
                     intro_content = infile.read()
                     cleaned_intro = clean_markdown(intro_content)
                     outfile.write(cleaned_intro)
-                    outfile.write('\n\n---\n\n')
             
             # Process each markdown file
             for md_file in markdown_files:
@@ -317,6 +316,7 @@ def combine_markdown_files():
                     file_name = os.path.splitext(os.path.basename(md_file))[0]
                     outfile.write(f'## {file_name}\n\n')
                     outfile.write(cleaned_content)
+                    outfile.write('\n\n---\n\n')  # Add separator between files
         
         print(f"Created {output_filename} in folder {folder}")
 
