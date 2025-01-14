@@ -4,6 +4,7 @@ import os
 import glob
 import html2text
 import shutil
+from bs4 import NavigableString
 
 def clean_html(html_content):
     # Create BeautifulSoup object
@@ -21,6 +22,9 @@ def clean_html(html_content):
                 # Create text node directly instead of using angle brackets
                 new_tag = soup.new_string(link)
                 iframe.replace_with(new_tag)
+                # Remove extra newline if it exists
+                if iframe.next_sibling and isinstance(iframe.next_sibling, NavigableString):
+                    iframe.next_sibling.replace_with('')
     
     # Remove the head section
     if soup.head:
@@ -110,7 +114,16 @@ def clean_markdown(content):
     # Get the content between first and last non-empty lines
     if start <= end:
         cleaned_lines = lines[start:end + 1]
-        return '\n'.join(cleaned_lines)
+        
+        # Remove blank lines after YouTube links
+        result_lines = []
+        for i, line in enumerate(cleaned_lines):
+            result_lines.append(line)
+            if 'youtube.com/watch?v=' in line and i < len(cleaned_lines) - 1:
+                if not cleaned_lines[i + 1].strip():
+                    continue
+            
+        return '\n'.join(result_lines)
     return content
 
 def clean_html_file(input_file, output_file):
@@ -334,11 +347,58 @@ def combine_markdown_files_custom():
     # Sort files by the folder number
     markdown_files.sort(key=lambda x: int(re.findall(r'\d+', os.path.basename(x))[0]) if re.findall(r'\d+', os.path.basename(x)) else float('inf'))
     
+    # Generate table of contents
+    toc = ["# Table of Contents\n\n"]
+    
+    # First pass to collect headers
+    for file_path in markdown_files:
+        with open(file_path, 'r', encoding='utf-8') as infile:
+            content = infile.read()
+            lines = content.split('\n')
+            current_h1 = None
+            
+            for line in lines:
+                line = line.strip()
+                if line.startswith('# '):  # Level 1 header
+                    title = line.replace('# ', '').strip()
+                    anchor = title.lower().replace(' ', '-')
+                    toc.append(f"- [{title}](#{anchor})\n")
+                    current_h1 = title
+                elif line.startswith('## '):  # Level 2 header
+                    if current_h1:  # Only include if we have a parent h1
+                        title = line.replace('## ', '').strip()
+                        # Create anchor that includes parent header to ensure uniqueness
+                        anchor = f"{current_h1.lower().replace(' ', '-')}-{title.lower().replace(' ', '-')}"
+                        toc.append(f"  - [{title}](#{anchor})\n")
+    
     # Combine files
     with open(output_file, 'w', encoding='utf-8') as outfile:
+        # Write table of contents
+        outfile.writelines(toc)
+        outfile.write("\n---\n\n")
+        
+        # Write content
         for file_path in markdown_files:
             with open(file_path, 'r', encoding='utf-8') as infile:
                 content = infile.read()
+                # Update the level 2 header IDs to match TOC anchors
+                lines = content.split('\n')
+                current_h1 = None
+                modified_lines = []
+                
+                for line in lines:
+                    if line.strip().startswith('# '):
+                        current_h1 = line.replace('# ', '').strip()
+                        modified_lines.append(line)
+                    elif line.strip().startswith('## '):
+                        title = line.replace('## ', '').strip()
+                        if current_h1:
+                            anchor = f"{current_h1.lower().replace(' ', '-')}-{title.lower().replace(' ', '-')}"
+                            modified_lines.append(f'## {title} {{#{anchor}}}')
+                    else:
+                        modified_lines.append(line)
+                
+                content = '\n'.join(modified_lines)
                 content = content.strip()
                 outfile.write(content + '\n\n---\n\n')
     
