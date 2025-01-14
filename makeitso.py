@@ -305,6 +305,7 @@ def combine_markdown_files():
                     intro_content = infile.read()
                     cleaned_intro = clean_markdown(intro_content)
                     outfile.write(cleaned_intro)
+                    outfile.write('\n\n')
             
             # Process each markdown file
             for md_file in markdown_files:
@@ -352,7 +353,7 @@ def combine_markdown_files_custom():
             with open(file_path, 'r', encoding='utf-8') as infile:
                 content = infile.read()
                 content = content.strip()
-                outfile.write(content + '\n\n---\n\n')
+                outfile.write(content + '\n\n')
     
     print(f"Combined {len(markdown_files)} markdown files into {output_file}")
 
