@@ -352,8 +352,23 @@ def combine_markdown_files_custom():
         for file_path in markdown_files:
             with open(file_path, 'r', encoding='utf-8') as infile:
                 content = infile.read()
+                # Clean up headers in the content
+                lines = content.splitlines()
+                cleaned_lines = []
+                for line in lines:
+                    if line.startswith('#'):
+                        # Clean up header line
+                        header_parts = line.split(' ', 1)  # Split at first space to preserve # symbols
+                        if len(header_parts) > 1:
+                            # Clean up the title part
+                            title = header_parts[1].strip()
+                            title = re.sub(r'\s+', ' ', title)  # Replace multiple spaces with single space
+                            line = f"{header_parts[0]} {title}"
+                    cleaned_lines.append(line)
+                
+                content = '\n'.join(cleaned_lines)
                 content = content.strip()
-                outfile.write(content + '\n\n')
+                outfile.write(content + '\n\n---\n\n')
     
     print(f"Combined {len(markdown_files)} markdown files into {output_file}")
 
